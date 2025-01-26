@@ -30,3 +30,9 @@ __⚠️ Module version matches the compatible gtklock version. Other versions m
 - gtk+3.0
 - libxkbcommon
 - libwayland-client
+
+## Building
+```bash
+meson setup build
+ninja -C build
+```
