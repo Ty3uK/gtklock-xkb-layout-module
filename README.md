@@ -8,9 +8,9 @@
 ### config file
 `formats=`array of pairs `layout=custom_text` separated by `;`
 
-`font-size=`font size of label with current layout
+`font-size=`font size of label with current layout (default: inherit)
 
-`width-chars=`width in chars of label
+`width-chars=`width in chars of label (default: 2)
 
 ### config file examples
 ```
