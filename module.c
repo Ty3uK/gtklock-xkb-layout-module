@@ -33,17 +33,18 @@ GOptionEntry module_entries[] = {
 
 static int self_id;
 
-static void handle_keyboard_layout_change(void *data, const char *layout_name) {
+static void handle_keyboard_layout_change(void *data, int index) {
   struct State *state = data;
-  gchar *label = (gchar *)layout_name;
-  gchar *layout_code = g_hash_table_lookup(state->labels, layout_name);
-  if (layout_code) {
-    label = g_hash_table_lookup(state->formats, layout_code);
-    if (!label) {
-      label = layout_code;
-    }
+  if (!state->labels) {
+    return;
   }
-  gtk_label_set_text(GTK_LABEL(state->gtk_label), label);
+
+  Layout **layout = &g_array_index(state->labels, Layout *, index);
+  char *text = g_hash_table_lookup(state->formats, layout);
+  if (!text) {
+    text = (char *)layout;
+  }
+  gtk_label_set_text(GTK_LABEL(state->gtk_label), text);
 }
 
 static void set_label_font_size(GtkLabel *label, int font_size) {
@@ -61,7 +62,7 @@ static void cleanup(struct Window *win) {
     g_hash_table_destroy(state->formats);
   }
   if (state->labels) {
-    g_hash_table_destroy(state->labels);
+    g_array_free(state->labels, TRUE);
   }
   if (state->xkb_keymap) {
     xkb_keymap_unref(state->xkb_keymap);
@@ -74,24 +75,6 @@ static void cleanup(struct Window *win) {
   }
   g_free(state);
   MODULE_DATA(win) = NULL;
-}
-
-static GHashTable *setup_layout_codes() {
-  GHashTable *result = g_hash_table_new(g_str_hash, g_str_equal);
-  struct rxkb_context *ctx = rxkb_context_new(RXKB_CONTEXT_NO_FLAGS);
-  if (!rxkb_context_parse_default_ruleset(ctx)) {
-    return result;
-  }
-  struct rxkb_layout *l = rxkb_layout_first(ctx);
-  while (l) {
-    gchar *key = g_strdup(rxkb_layout_get_description(l));
-    gchar *val = g_strdup(rxkb_layout_get_name(l));
-    g_hash_table_insert(result, key, val);
-    l = rxkb_layout_next(l);
-  }
-  rxkb_layout_unref(l);
-  rxkb_context_unref(ctx);
-  return result;
 }
 
 static GHashTable *setup_layout_formats() {
@@ -121,7 +104,6 @@ void on_window_create(struct GtkLock *gtklock, struct Window *win) {
   MODULE_DATA(win) = g_malloc(sizeof(struct State));
   struct State *state = win->module_data[self_id];
   state->on_keyboard_layout_change = handle_keyboard_layout_change;
-  state->labels = setup_layout_codes();
   state->formats = setup_layout_formats();
   state->xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
   state->gtk_label = gtk_label_new("");

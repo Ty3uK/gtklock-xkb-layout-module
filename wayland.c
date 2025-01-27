@@ -5,6 +5,8 @@
 #include <sys/mman.h>
 #include <wayland-client-protocol.h>
 #include <wayland-client.h>
+#include <xkbcommon/xkbcommon.h>
+#include <xkbcommon/xkbregistry.h>
 
 static void handle_keyboard_keymap(void *data, struct wl_keyboard *keyboard,
                                    uint32_t format, int fd, uint32_t size) {
@@ -18,6 +20,27 @@ static void handle_keyboard_keymap(void *data, struct wl_keyboard *keyboard,
 
   munmap(map_shm, size);
   close(fd);
+
+  xkb_layout_index_t nums = xkb_keymap_num_layouts(state->xkb_keymap);
+  state->labels = g_array_sized_new(FALSE, TRUE, sizeof(Layout*), nums);
+  struct rxkb_context *ctx = rxkb_context_new(RXKB_CONTEXT_NO_FLAGS);
+  if (!rxkb_context_parse_default_ruleset(ctx)) {
+    return;
+  }
+  struct rxkb_layout *l;
+  for (xkb_layout_index_t i = 0; i < nums; i++) {
+    const char *layout_name = xkb_keymap_layout_get_name(state->xkb_keymap, i);
+    l = rxkb_layout_first(ctx);
+    while (l) {
+      if (g_strcmp0(rxkb_layout_get_description(l), layout_name) == 0) {
+        char *value = g_strdup(rxkb_layout_get_name(l));
+        g_array_append_val(state->labels, *value);
+        break;
+      }
+      l = rxkb_layout_next(l);
+    }
+  }
+  rxkb_context_unref(ctx);
 }
 
 static void handle_keyboard_modifiers(void *data, struct wl_keyboard *keyboard,
@@ -25,10 +48,8 @@ static void handle_keyboard_modifiers(void *data, struct wl_keyboard *keyboard,
                                       uint32_t mods_latched,
                                       uint32_t mods_locked, uint32_t group) {
   struct State *state = data;
-  const char *layout_name =
-      xkb_keymap_layout_get_name(state->xkb_keymap, group);
   if (state->on_keyboard_layout_change) {
-    state->on_keyboard_layout_change(data, layout_name);
+    state->on_keyboard_layout_change(data, group);
   }
 }
 
