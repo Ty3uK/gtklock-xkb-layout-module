@@ -1,3 +1,4 @@
+// Ported from https://github.com/jovanlanik/gtklock-userinfo-module/blob/master/gtklock-module.h
 const gtk = @import("gtk");
 const gdk = @import("gdk");
 
