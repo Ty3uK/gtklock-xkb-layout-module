@@ -33,6 +33,5 @@ __⚠️ Module version matches the compatible gtklock version. Other versions m
 
 ## Building
 ```bash
-meson setup build
-ninja -C build
+zig build
 ```
