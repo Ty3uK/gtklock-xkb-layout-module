@@ -77,8 +77,14 @@ pub export fn on_window_destroy(_: ?*anyopaque, ctx: *gtklock.Window(State)) voi
 }
 
 pub export fn on_window_create(_: ?*anyopaque, ctx: *gtklock.Window(State)) void {
-    const state = State.init(std.heap.page_allocator) catch return;
-    state.parseFormats(config_formats) catch return;
+    const state = State.init(std.heap.page_allocator) catch |err| {
+        log.err("Cannot create state: {}", .{err});
+        return;
+    };
+    state.parseFormats(config_formats) catch |err| {
+        log.err("Cannot parse formats from config: {}", .{err});
+        return;
+    };
 
     state.gtk_label.setWidthChars(config_width_chars);
     if (config_font_size > 0) {
@@ -113,7 +119,10 @@ fn registryListener(registry: *wl.Registry, event: wl.Registry.Event, state: *St
             if (std.mem.orderZ(u8, global.interface, wl.Seat.getInterface().name) != .eq) {
                 return;
             }
-            const seat = registry.bind(global.name, wl.Seat, 4) catch return;
+            const seat = registry.bind(global.name, wl.Seat, 4) catch |err| {
+                log.err("Cannot retreive wl_seat from wl_registry: {}", .{err});
+                return;
+            };
             seat.setListener(*State, seatListener, state);
         },
         .global_remove => {},
@@ -176,11 +185,14 @@ fn keyboardListener(_: *wl.Keyboard, event: wl.Keyboard.Event, state: *State) vo
                 while (l != null) {
                     if (std.mem.orderZ(u8, xkb.rxkb_layout_get_description(l), xkb.xkb_keymap_layout_get_name(xkb_keymap, i)) == .eq) {
                         const layout_name = util.convertCString(xkb.rxkb_layout_get_name(l));
-                        const layout_name_copy = state.allocator.dupeZ(u8, layout_name) catch {
-                            log.err("Cannot duplicate layout_name", .{});
+                        const layout_name_copy = state.allocator.dupeZ(u8, layout_name) catch |err| {
+                            log.err("Cannot duplicate layout_name: {}", .{err});
                             return;
                         };
-                        state.labels.append(layout_name_copy) catch return;
+                        state.labels.append(layout_name_copy) catch |err| {
+                            log.err("Cannot append layout_name to `state.labels`: {}", .{err});
+                            return;
+                        };
                     }
                     l = xkb.rxkb_layout_next(l);
                 }
