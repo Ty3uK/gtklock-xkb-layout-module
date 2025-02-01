@@ -1,5 +1,5 @@
 pkgname=gtklock-xkb-layout-module
-pkgver=1.0.0
+pkgver=1.0.1
 pkgrel=1
 pkgdesc="gtklock module to display current keyboard layout on a lock-screen"
 url="https://github.com/Ty3uK/gtklock-xkb-layout-module"
@@ -8,7 +8,7 @@ license=('GPL-3.0-only')
 depends=('gtk3' 'gtklock' 'wayland' 'libxkbcommon')
 makedepends=('zig')
 source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('51dd4d4ae3990ccd975d8c3ff99c6d3437f18d8a4711a3b9705e62c73d0a81a8')
+sha256sums=('985278d3c29a9a7f6bce3e04427518f116369eccdea7005baa4c3fcec3132251')
 _archive="$pkgname-$pkgver"
 
 build() {

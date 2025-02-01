@@ -104,11 +104,11 @@ pub export fn on_window_create(_: ?*anyopaque, ctx: *gtklock.Window(State)) void
         log.err("Cannot get wl_display from gdk_display", .{});
         return;
     }
-    const wl_registry = wl_display.?.getRegistry() catch {
+    state.wl_registry = wl_display.?.getRegistry() catch {
         log.err("Cannot get wl_registry from wl_display", .{});
         return;
     };
-    wl_registry.setListener(*State, registryListener, state);
+    state.wl_registry.?.setListener(*State, registryListener, state);
 
     ctx.moduleData()[selfId] = state;
 }
@@ -119,11 +119,11 @@ fn registryListener(registry: *wl.Registry, event: wl.Registry.Event, state: *St
             if (std.mem.orderZ(u8, global.interface, wl.Seat.getInterface().name) != .eq) {
                 return;
             }
-            const seat = registry.bind(global.name, wl.Seat, 4) catch |err| {
+            state.wl_seat = registry.bind(global.name, wl.Seat, 4) catch |err| {
                 log.err("Cannot retreive wl_seat from wl_registry: {}", .{err});
                 return;
             };
-            seat.setListener(*State, seatListener, state);
+            state.wl_seat.?.setListener(*State, seatListener, state);
         },
         .global_remove => {},
     }
@@ -133,11 +133,11 @@ fn seatListener(seat: *wl.Seat, event: wl.Seat.Event, state: *State) void {
     switch (event) {
         .capabilities => |data| {
             if (data.capabilities.keyboard) {
-                const wl_keyboard = seat.getKeyboard() catch {
+                state.wl_keyboard = seat.getKeyboard() catch {
                     log.err("Cannot get wl_keyboard from wl_seat", .{});
                     return;
                 };
-                wl_keyboard.setListener(*State, keyboardListener, state);
+                state.wl_keyboard.?.setListener(*State, keyboardListener, state);
             }
         },
         .name => {},
